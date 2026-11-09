@@ -1,0 +1,7 @@
+check r = 0.9999 [42s]
+scored framed system + neutral question [344s]
+scored neutral system + framed question [633s]
+neutral system + neutral question (original neutral prompt)    YES on unrelated   0.1%   hard AUROC 0.783
+framed system + framed question (original framed prompt)       YES on unrelated  87.3%   hard AUROC 0.719
+framed system + neutral question                               YES on unrelated   2.8%   hard AUROC 0.684
+neutral system + framed question                               YES on unrelated  10.0%   hard AUROC 0.757

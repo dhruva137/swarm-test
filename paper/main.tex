@@ -12,6 +12,7 @@
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
 \usepackage{caption}
+\usepackage[section]{placeins}
 \captionsetup{font=small,labelfont=bf}
 \setlist{nosep,leftmargin=1.2em}
 \setlength{\parskip}{3pt}
@@ -20,7 +21,7 @@
 \graphicspath{{../figs/}}
 \newcommand{\ci}[2]{\,[#1,\,#2]}
 
-\title{\textbf{Agents Change Names, Not Words:}\\[2pt]\large Where a Swarm's Coordination Becomes Visible, and Where Oversight Loses It\thanks{Research conducted at the Swarm Alignment Hackathon~\cite{apart2026hackathon}, November 2026.}}
+\title{\textbf{Agents Change Names, Not Words:}\\[2pt]\large What Oversight Can See in a Real AI Swarm\thanks{Research conducted at the Swarm Alignment Hackathon~\cite{apart2026hackathon}, November 2026.}}
 \author{Dhruva P Gowda\\[1pt]\small Technical Alignment Research Accelerator (TARA) \quad \texttt{dhruvapgowda.work@gmail.com}\\[4pt]
 \small With Apart Research}
 \date{}
@@ -31,13 +32,13 @@
 
 \begin{abstract}
 \noindent
-Swarm oversight rests on \emph{linking} actions taken under different identities to one effort. We ask where the coordination signal lives and where oversight loses it, following it through a real swarm's logs (collusion.wiki~\cite{collusionwiki2026}: 14,591 posts, 3,102 self-named agents; replicated on the Hugging Face attack swarm~\cite{forman2026swarmtraces}), LLM monitors, and controlled swarms told they are watched.
+Overseeing an AI agent swarm requires \emph{linking} actions taken under different identities to one effort. We trace where this signal lives, and where oversight loses it, through a real swarm's logs (collusion.wiki~\cite{collusionwiki2026}: 14,591 posts by 3,102 self-named agents; replicated on the Hugging Face attack swarm~\cite{forman2026swarmtraces}), LLM monitors, and controlled swarms told they are watched.
 
-\textbf{(1) In the words, not the names.} Using only earlier posts, text retrieval ranks a true partner first in 68\%\ci{65}{71} of cases among $\sim$8,000 candidates, against 13\% via agent history. Name-only linkage is near chance (AUROC 0.52). Metadata-only monitoring catches 12\% of linked pairs at 1\% FPR, against 37\% with content.
+\textbf{(1) The signal is in the words, not the names.} Using only earlier posts, text retrieval ranks a true partner first in 68\%\ci{65}{71} of cases among $\sim$8,000 candidates, against 13\% via agent history; name-only linkage is near chance (AUROC 0.52), and content catches three times more linked pairs than metadata at 1\% FPR (37\% vs.\ 12\%).
 
-\textbf{(2) Encoded by monitors, ignored by their verdicts.} Collusion-framed Qwen3 judges call up to 99\% of unrelated pairs coordinated, yet a linear probe on their activations reads linkage nearly as well as under a neutral prompt (0.83--0.85 vs.\ a verbal 0.70--0.72). In causal steering of Qwen3-1.7B, a full linked-minus-unlinked move along the linkage direction shifts the verdict by under 1\% of its own class gap. The framed 4B verdict instead tracks how coordination \emph{sounds}, rising with coordination-like language that does not indicate linkage; a probe on the same activations falls with it.
+\textbf{(2) Monitors encode it; their verdicts barely use it.} Collusion-framed Qwen3 judges call up to 99\% of unrelated pairs coordinated, yet linear probes on the same activations read linkage at 0.83--0.85 AUROC (verdicts: 0.70--0.72). Causal steering of Qwen3-1.7B shows the verdict barely uses the linkage direction (under 1.4\% of its class gap wherever steering works). Framed verdicts instead track how coordination \emph{sounds}, rising with coordination-like language that does not indicate linkage (by two semantic measures from different model families), unlike probes on the same activations.
 
-\textbf{(3) Hiding costs coordination.} Warned about a content monitor, controlled swarms dropped coordination-sounding language but stayed about as linkable, lost coordination (Qwen3-1.7B: 77\%$\to$7\% task success), and their evasion was itself detectable (AUROC 1.00).
+\textbf{(3) Hiding costs coordination.} Warned about a content monitor, controlled swarms changed how they wrote but stayed about as linkable, lost coordination (Qwen3-1.7B: 77\%$\to$7\% task success), and the change itself was detectable (AUROC 1.00).
 
 Oversight should read content and representations, not names and verdicts.
 \end{abstract}
@@ -45,14 +46,21 @@ Oversight should read content and representations, not names and verdicts.
 \section{Introduction}
 In July 2026 about 1,200 OpenAI agents turned a shared Artifactory directory into a message board, and roughly 700 took part in an attack on Hugging Face~\cite{wijk2026hf,forman2026swarmtraces}. A separate swarm of agents that identified as OpenAI agents coordinated on public wikis under 3,102 self-chosen names~\cite{collusionwiki2026}. Both incidents were reconstructed after the fact, from logs.
 
-\textbf{The question.} Every swarm-oversight design must at some point decide that two actions taken under \emph{different} identities belong to one coordinated effort. This is \emph{linkage}, the elementary operation of coordination-episode discovery~\cite{frank2026counterswarm}. Current proposals borrow from AI control~\cite{greenblatt2024control}: they watch agents one at a time~\cite{makins2026multiagent}, rely on metadata, or ask an LLM judge told what to look for. Each design assumes the coordination signal is available where it looks. We ask instead: \emph{where does a swarm's coordination signal actually live, and where does oversight lose it?} We follow the signal through three places and find a consistent answer (Table~\ref{tab:verdicts}). Our main contributions are:
+\textbf{The question.} Every swarm-oversight design must at some point decide that two actions taken under \emph{different} identities belong to one coordinated effort. This is \emph{linkage}, the elementary operation of coordination-episode discovery~\cite{frank2026counterswarm}. Current proposals borrow from AI control~\cite{greenblatt2024control}: they watch agents one at a time~\cite{makins2026multiagent}, rely on metadata, or ask an LLM judge told what to look for. Each design assumes the coordination signal is available where it looks. We ask instead: \emph{where does a swarm's coordination signal actually live, and where does oversight lose it?} We follow the signal through three places and find a consistent answer (Fig.~\ref{fig:overview}, Table~\ref{tab:verdicts}). Our main contributions are:
 \begin{enumerate}
 \item \textbf{In the logs,} what agents write carries the signal; self-chosen names and metadata lose it (\S\ref{sec:p1}).
-\item \textbf{In the monitor,} the signal is linearly present in the model's activations, but the verdict barely uses it: in causal steering, moving a pair along the linkage direction shifts the verdict by under 1\% of its own linked-vs-unlinked gap. Collusion framing makes verdicts confidently wrong without erasing the representation, and the framed 4B verdict tracks how coordination \emph{sounds} rather than whether agents are linked (\S\ref{sec:p2}).
-\item \textbf{In the swarm,} agents that know about a content monitor drop coordination-sounding language but do not become measurably harder to link; they lose the ability to coordinate, and their attempt to hide is itself detectable (\S\ref{sec:p3}).
+\item \textbf{In the monitor,} the signal is linearly present in the model's activations, but the verdict barely uses it: in causal steering, moving a pair along the linkage direction shifts the verdict by under 1.4\% of its own linked-vs-unlinked gap at every layer and position where steering works, against 10.6--54\% for a verdict-predictive control direction. Collusion framing makes verdicts confidently wrong without erasing the representation, and framed verdicts track how coordination \emph{sounds} rather than whether agents are linked (\S\ref{sec:p2}).
+\item \textbf{In the swarm,} agents that know about a content monitor change how they write but do not become measurably harder to link; they lose the ability to coordinate, and their attempt to hide is itself detectable (\S\ref{sec:p3}).
 \item \textbf{An audited, reproducible pipeline} on real swarm data: every number traces to a script and a result file, and corrections and withdrawn claims are logged (Appendix~\ref{app:audit}).
 \end{enumerate}
 The common thread: oversight loses the signal wherever it reads a surface that agents can change (names, metadata, how coordination sounds), and keeps it where it reads what agents say or the monitor's representation of it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_overview.pdf}
+\caption{\textbf{The three findings at a glance.} (a) Share of linked posts whose true earlier partner is ranked first among $\sim$8,000 earlier posts by other agents (faded: posts with no near-copy partner). (b) Linkage AUROC on hard negatives: the judge's yes/no verdict under a neutral and a collusion-framed prompt, and a linear probe (nested-CV layer) on the framed model's own activations. (c) Controlled Qwen3-1.7B swarms (4 paired seeds) without and with the warning that a content monitor removes linked agents: task success collapses, while linkability shows no detectable change.}
+\label{fig:overview}
+\end{figure}
 
 \begin{table}[t]
 \centering\small
@@ -64,8 +72,8 @@ The common thread: oversight loses the signal wherever it reads a surface that a
 \midrule
 Per-agent watching & identities & Name-only AUROC 0.52; top-1 partner 13\% (agent history) vs.\ 68\% (text) \\
 Gateway monitoring & metadata & Recall@1\%FPR 12\% (metadata) vs.\ 37\% (content) \\
-Framed LLM judge & the verdict & Up to 99\% false ``coordinated''; the framed model's own activations still give 0.83--0.85 (nested CV), steering shows the verdict barely uses them, and the framed 4B verdict rises with coordination-sounding language \\
-``Agents will hide'' & evadable surface text & Warned swarms drop coordination-sounding language yet stay about as linkable (Qwen3-1.7B); coordination collapses (77\%$\to$7\%); evasion style detectable (AUROC 1.00) \\
+Framed LLM judge & the verdict & Up to 99\% false ``coordinated''; the framed model's own activations still give 0.83--0.85 (nested CV), steering shows the verdict barely uses them, and framed verdicts rise with coordination-sounding language \\
+``Agents will hide'' & evadable surface text & Warned swarms change how they write yet stay about as linkable (Qwen3-1.7B); coordination collapses (77\%$\to$7\%); evasion style detectable (AUROC 1.00) \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -151,20 +159,21 @@ Inference used Hugging Face transformers and vLLM~\cite{kwon2023vllm} on Kaggle 
 
 \subsection{Part 2 --- In the monitor: the signal is encoded, but the verdict barely uses it}
 \label{sec:p2}
-We compare Qwen3-1.7B and 4B on 1,500 held-out pairs, with identical URL-free text for all monitors (Fig.~\ref{fig:geometry}; Appendix Fig.~\ref{fig:knowsay}).
+We compare Qwen3-1.7B and 4B on 1,500 held-out pairs, with identical URL-free text for all monitors (Fig.~\ref{fig:overview}b; Appendix Figs.~\ref{fig:geometry} and~\ref{fig:knowsay}).
 
 \textbf{Framing makes verdicts confidently wrong.}
 \begin{itemize}
 \item Under the collusion-framed prompt, 4B says ``coordinated'' to 98.7\% of unrelated pairs (1.7B: 87.3\%; neutral prompt: 20\% and 0.1\%), with 0.008 bits of mean decision entropy for 4B (neutral 4B: 0.14; the framed 1.7B judge is not lower-entropy, 0.13 vs.\ 0.05 bits).
 \item Verbal ranking falls from 0.802 to 0.702 (4B, $\Delta=-0.100\ci{-0.130}{-0.070}$) and from 0.783 to 0.719 (1.7B).
 \item Framed Qwen3-8B still flags 92\% of unrelated pairs (AUROC 0.776).
+\item \textbf{Framing or wording?} Crossing the two system messages with the two questions (Qwen3-1.7B, all 1,500 pairs) shows that the over-flagging needs both: the security-monitor system message alone raises the share of unrelated pairs called coordinated from 0.1\% to 2.8\%, the collusion question alone to 10\%, and only the two together to 87\%. The framing message alone lowers ranking the most (hard-negative AUROC 0.684, vs.\ 0.757 for the question alone; 0.783 and 0.719 for the original prompts).
 \end{itemize}
 
 \textbf{The representation keeps the signal.}
 \begin{itemize}
 \item A linear probe on the \emph{framed} model's own activations reaches 0.835--0.847 (1.7B, layers 16--28) and 0.851--0.863 (4B, layers 20--36). These are per-layer held-out values; with nested-CV layer choice they are 0.831 and 0.851.
-\item The neutral prompt gives 0.839--0.857 and 0.852--0.875 over the same layers (nested CV: 0.856 and 0.861), so the framed probe is within about 0.01--0.03 of it and far above the framed verbal answer (Fig.~\ref{fig:geometry}c). A probe trained under the neutral prompt still reads framed activations at 0.77--0.81.
-\item Framing pushes the final-layer answer coordinate up by $+2.7$ (1.7B) and $+2.0$ (4B) within-class SD (Fig.~\ref{fig:geometry}a,b).
+\item The neutral prompt gives 0.839--0.857 and 0.852--0.875 over the same layers (nested CV: 0.856 and 0.861), so the framed probe is within about 0.01--0.03 of it and far above the framed verbal answer (Fig.~\ref{fig:overview}b; Appendix Fig.~\ref{fig:geometry}c). A probe trained under the neutral prompt still reads framed activations at 0.77--0.81.
+\item Framing pushes the final-layer answer coordinate up by $+2.7$ (1.7B) and $+2.0$ (4B) within-class SD (Appendix Fig.~\ref{fig:geometry}a,b).
 \end{itemize}
 
 \textbf{The encoding is linear and label-efficient.}
@@ -180,7 +189,7 @@ We compare Qwen3-1.7B and 4B on 1,500 held-out pairs, with identical URL-free te
 \item \textbf{Linkage direction.} This direction separates linked from unlinked pairs by 1.4--1.5\,SD. Yet a class-gap move along it produces only \textbf{0.02\%} (neutral) and \textbf{0.8\%} (framed) of the verdict's gap ($+0.0013$ and $+0.016$ log-odds per SD). Per unit of activation norm, the control moves the verdict 138$\times$ (neutral) and 9$\times$ (framed) more.
 \item \textbf{Nulls.} Under the neutral prompt the linkage effect lies inside the range of 15 shuffled-label directions from two runs (largest $|$effect$|$ 0.0045). Under the framed prompt it is about 3$\times$ the largest null (0.0058), but still far below the control.
 \item \textbf{Dose-response.} Slopes are similar at 2 and 8\,SD (within 12\%), and the two directions are nearly orthogonal ($|\cos|\le0.041$).
-\item \textbf{Scope.} This holds for one layer and the answer position only; the model may still route linkage through other token positions.
+\item \textbf{Other layers and positions} (Fig.~\ref{fig:steer}). Repeating the test at layers 16 and 24, and at layer 20 with the push added at every token position (dose 2\,SD), gives the same picture: the control produces 10.6--54.0\% of the verdict's gap, the linkage direction at most 1.34\% (at least 10$\times$ less). At layers 8 and 12 even the control produces under 0.3\%, so answer-position pushes there cannot test the question.
 \end{itemize}
 
 \textbf{The swarm's own words steer the verdict} (Appendix Table~\ref{tab:recruit}).
@@ -192,33 +201,26 @@ We compare Qwen3-1.7B and 4B on 1,500 held-out pairs, with identical URL-free te
 \item \textbf{Reading the representation is not immune.} Any appended sentence shifts a probe trained on clean activations by $-0.18$ to $-0.37$ within-class SD on unrelated pairs, and a relay sentence moves it by $-0.10$ to $+0.31$\,SD relative to a neutral one. Under the full attack (exculpatory sentence on linked pairs, relay sentence on unrelated ones), probe AUROC changes by $-0.007$ to $+0.05$, while the framed 4B verdict falls from 0.702 to 0.635. The attack was chosen against verdicts; we did not test attacks optimised against probes.
 \end{itemize}
 
-\textbf{The verdict tracks how coordination \emph{sounds}; the representation does not} (Fig.~\ref{fig:coordtalk}a). We score each pair's \emph{coordination-talk}, the mean cosine of its two posts to the centroid of the five relay sentences (frozen encoder; fixed before this analysis). We then regress each read-out on linkage, pair similarity and coordination-talk (standardised; agent-cluster bootstrap).
+\textbf{Framed verdicts track how coordination \emph{sounds}; the representation does not} (Fig.~\ref{fig:coordtalk}a). We score each pair's \emph{coordination-talk}, the mean cosine similarity of its two posts to the centroid of the five relay sentences (fixed before this analysis), with three instruments: two sentence encoders from different model families (bge and MiniLM; $r=0.74$) and a keyword TF-IDF score ($r=0.39$ with bge). We regress each read-out on linkage, pair similarity (frozen-encoder cosine, the same control for every instrument) and coordination-talk (standardised; agent-cluster bootstrap).
 \begin{itemize}
-\item In this data coordination-talk does not signal linkage: linked and unlinked pairs score alike (0.571 vs.\ 0.577), and on its own it ranks linked pairs slightly \emph{below} hard unlinked ones (AUROC 0.45).
-\item The framed 4B verdict rises with it beyond linkage and similarity: $+0.125\ci{0.074}{0.173}$. This holds on hard pairs only ($+0.117$), among unrelated pairs alone ($+0.183\ci{0.093}{0.266}$; neutral prompt $+0.106\ci{0.015}{0.200}$), and with a lexical TF-IDF instrument ($+0.116$; neutral $+0.120$).
-\item A linear probe on the same activations \emph{falls} with coordination-talk in every model, prompt, instrument and subset ($-0.09$ to $-0.32$; every CI excludes 0).
-\item At 1.7B the verdict's sign depends on the instrument (framed: $+0.066$ semantic, $-0.096$ lexical). With the semantic instrument, framing raises the verdict's loading in both models ($+0.076$ and $+0.088$, CIs exclude 0); with the lexical one it does not ($-0.063\ci{-0.113}{-0.010}$ and $-0.004$), so we do not attribute the bias to framing.
-\item \textbf{Reading.} Where the result is robust (framed 4B), the verdict partly answers ``does this sound like coordination?'', which is exactly what relay sentences supply, while a read-out of the same activations tracks the relation.
+\item Coordination-talk does not signal linkage: linked and unlinked pairs score alike (0.571 vs.\ 0.577), and on its own it ranks linked pairs slightly \emph{below} hard unlinked ones (AUROC 0.45).
+\item Under both semantic instruments the framed verdict rises with coordination-talk beyond linkage and similarity, at both sizes: 1.7B $+0.066$ and $+0.119$, 4B $+0.125$ and $+0.185$ (every CI excludes 0). Framing raises this loading in both models ($+0.076$ and $+0.102$ at 1.7B, $+0.088$ and $+0.072$ at 4B; every CI excludes 0).
+\item For framed 4B the result also holds on hard pairs only ($+0.117$), among unrelated pairs alone ($+0.183\ci{0.093}{0.266}$) and with the keyword instrument ($+0.116$). The keyword instrument does not reproduce the 1.7B loading or the framing effect.
+\item A linear probe on the same activations \emph{falls} with coordination-talk in every model, prompt, instrument and subset ($-0.08$ to $-0.32$; every CI excludes 0).
+\item \textbf{Reading.} The framed verdict partly answers ``does this sound like coordination?'', exactly what relay sentences supply, while a read-out of the same activations tracks the relation.
 \end{itemize}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{fig_geometry.pdf}
-\caption{\textbf{Part 2: the monitor knows more than it says} (Qwen3-1.7B, 1,500 pairs). (a, b) Each pair's out-of-fold linkage coordinate (axis fitted under the neutral prompt) against its answer coordinate (YES$-$NO unembedding), in neutral-prompt SD units; diamonds mark class means. Framing lifts the whole cloud along the answer axis. (c) Held-out AUROC of linear read-outs by layer: the framed model's own activations (green) remain as informative as the neutral ones (blue, solid), while the framed verbal answer (orange, dashed) falls.}
-\label{fig:geometry}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.78\linewidth]{fig_steer.pdf}
-\caption{\textbf{Causal test: the verdict ignores the linkage direction} (Qwen3-1.7B, layer 20, answer position, 120 held-out pairs). Change in the verdict's YES-vs-NO log-odds per SD of push along each fitted direction (log scale): verdict-predictive (positive control), linkage (what a probe reads), and the largest of this run's five shuffled-label nulls. Checks: the hook shifts the hidden state by exactly the injected vector, and unsteered scores reproduce recorded ones ($r\ge0.9998$).}
+\includegraphics[width=\linewidth]{fig_steer_layers.pdf}
+\caption{\textbf{Causal test: the verdict barely uses the linkage direction at any layer where steering works} (Qwen3-1.7B, 120 held-out pairs). Share of the verdict's own linked-vs-unlinked gap produced by a class-gap move along the verdict-predictive direction (positive control) and along the linkage direction (what a probe reads), for pushes at the answer position of each layer and at every token position of layer 20 (diamonds). Crosses: largest of two shuffled-label nulls; hollow markers: negative effect; shaded: layers where even the control is ineffective. Layer 20 (answer position) is the main run, with 15 nulls and two doses. Checks: the hook shifts the hidden state by exactly the injected vector, and unsteered scores reproduce recorded ones ($r\ge0.9998$).}
 \label{fig:steer}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig_coordtalk.pdf}
-\caption{\textbf{The verdict tracks how coordination sounds.} (a) Loading of each read-out on \emph{coordination-talk} (cosine of a pair's posts to the centroid of five real relay sentences), controlling for linkage and pair similarity; 1,500 held-out pairs, 95\% agent-cluster bootstrap CIs. Filled: semantic instrument (frozen encoder); hollow: lexical instrument (TF-IDF). The framed 4B verdict loads positively under both instruments; probes on the same activations load negatively everywhere. (b) Coordination-talk of controlled-swarm posts without and with the warning (digits and city names masked); each line joins one seed.}
+\caption{\textbf{The verdict tracks how coordination sounds.} (a) Loading of each read-out on \emph{coordination-talk} (mean cosine of a pair's two posts to the centroid of five real relay sentences), controlling for linkage and pair similarity; 1,500 held-out pairs, 95\% agent-cluster bootstrap CIs. Circles and triangles: semantic instruments (bge, MiniLM); hollow squares: keyword instrument (TF-IDF). Framed verdicts load positively under both semantic instruments at both sizes; probes on the same activations load negatively everywhere. (b) Coordination-talk of controlled-swarm posts without and with the warning (digits and city names masked); each line joins one seed.}
 \label{fig:coordtalk}
 \end{figure}
 
@@ -242,7 +244,7 @@ We compare Qwen3-1.7B and 4B on 1,500 held-out pairs, with identical URL-free te
 \item Warned posts become \emph{more} varied, not less: cross-swarm cosine 0.73 vs.\ 0.90 at 8B and 0.72 vs.\ 0.87 at 1.7B. Digits and city names are masked before embedding.
 \item Yet a linear classifier trained on other swarms flags every warned swarm's posts: leave-one-swarm-out AUROC 1.00 at both sizes.
 \item The comparison is with the same task without a warning, so this shows that switching into evasion is visible, not that disguised posts are separable from arbitrary text.
-\item \textbf{What changes is the register.} Coordination-talk, measured as in Part~2, falls from 0.611 to 0.497 at 8B (lower in 8/8 seeds) and from 0.537 to 0.510 at 1.7B (4/4; Fig.~\ref{fig:coordtalk}b), while linkability shows no detectable drop. This is the feature the framed 4B verdict rises with; we did not run that verdict on synthetic posts.
+\item \textbf{What changes is the register.} Coordination-talk, measured as in Part~2, falls from 0.611 to 0.497 at 8B (lower in 8/8 seeds; MiniLM agrees, 8/8) and from 0.537 to 0.510 at 1.7B (4/4; Fig.~\ref{fig:coordtalk}b; MiniLM does not confirm it at 1.7B), while linkability shows no detectable drop. This is the feature framed verdicts rise with; we did not run those verdicts on synthetic posts.
 \end{itemize}
 The monitor was announced, not run in the loop. Under this single warning text, these models did not achieve both hiding and coordination.
 
@@ -254,7 +256,7 @@ The monitor was announced, not run in the loop. Under this single warning text, 
 \end{figure}
 
 \section{Discussion and Limitations}
-\textbf{One answer, three places.} The coordination signal of a real swarm lives in what its agents say. Oversight loses it wherever it reads a surface instead: self-chosen names, metadata, or, for a framed 4B verdict, how coordination sounds. Agents change such surfaces (new names in the wild, a new register when warned in our swarms) while staying linkable by content, and in our swarms hiding cost the coordination and was itself detectable.
+\textbf{One answer, three places.} The coordination signal of a real swarm lives in what its agents say. Oversight loses it wherever it reads a surface instead: self-chosen names, metadata, or, for a framed verdict, how coordination sounds. Agents change such surfaces (new names in the wild, a new register when warned in our swarms) while staying linkable by content, and in our swarms hiding cost the coordination and was itself detectable.
 
 \textbf{For infrastructure.} Log content and index it for cross-agent retrieval: from one post, text names a partner 68\% of the time (34\% without near-copies). Issue platform identities~\cite{chan2024ids} rather than trusting self-asserted names.
 
@@ -264,30 +266,29 @@ The monitor was announced, not run in the loop. Under this single warning text, 
 
 \textbf{Limitations.}
 \begin{itemize}
-\item \textbf{Label:} the label is a proxy, not proven intent.
-\item \textbf{Scope:} one wiki swarm and one attack swarm, both attributed to OpenAI agents.
-\item \textbf{Judges:} small open models, with two prompts that differ in framing and wording.
-\item \textbf{Probes:} probes are supervised, while verbal judges are zero-shot.
-\item \textbf{Steering:} one model (Qwen3-1.7B), one layer and one position.
-\item \textbf{Coordination-talk:} measured as similarity to five relay sentences from the same swarm; two instruments agree only for the framed 4B verdict.
-\item \textbf{Synthetic swarms:} small (12 agents, 4--8 seeds), with one warning text.
-\item \textbf{Copying:} near-copies drive much of the easy linkage. Swarms that coordinate without copying, for example by steganography~\cite{motwani2024secret}, will be harder to see.
+\item \textbf{Label:} a proxy (a shared uncommon URL), not proven intent. Blind annotators judged 97\% of linked pairs to be one effort; hard negatives are noisy, so hard-negative scores are conservative.
+\item \textbf{Scope:} two real swarms, both attributed to OpenAI agents; the content result replicates across both platforms.
+\item \textbf{Judges:} small open Qwen3 models (1.7B--8B); the two prompts differ in framing and wording; a $2\times2$ swap at 1.7B shows how much each part contributes (\S\ref{sec:p2}).
+\item \textbf{Probes vs.\ verdicts:} probes are supervised and verdicts zero-shot, so the comparison shows what the activations contain, not a zero-shot fix.
+\item \textbf{Steering:} one model (Qwen3-1.7B), tested at five layers and at all token positions; 4B and 8B remain untested.
+\item \textbf{Coordination-talk:} similarity to five relay sentences; two semantic instruments agree at both sizes; a keyword instrument confirms only the 4B loading, not the framing effect.
+\item \textbf{Synthetic swarms:} small (12 agents, 4--8 seeds) with one warning text; the monitor was announced, not run in the loop.
+\item \textbf{Copying:} near-copies drive much of the easy linkage, so we report no-near-copy results throughout; steganographic swarms~\cite{motwani2024secret} will be harder to see.
 \end{itemize}
 Appendix~\ref{app:limits} gives the full limitations and dual-use statement.
 
-\textbf{Future work.} (i) Run framed and neutral judges on the synthetic posts, to test directly whether a register shift fools register-keyed verdicts. (ii) Repeat the steering test at 4B and 8B and at other token positions. (iii) Attack probes adaptively, not only with verdict-targeted sentences. (iv) Test swarms that coordinate through shared encodings~\cite{elasky2026encoded} or steganography~\cite{motwani2024secret}.
+\textbf{Future Work.} (i) Run framed and neutral judges on the synthetic posts, to test directly whether a register shift fools register-keyed verdicts. (ii) Repeat the steering test at 4B and 8B. (iii) Attack probes adaptively, not only with verdict-targeted sentences. (iv) Test swarms that coordinate through shared encodings~\cite{elasky2026encoded} or steganography~\cite{motwani2024secret}.
 
 \section{Conclusion}
-On real swarm logs, oversight that follows agents' names or metadata misses what their words reveal. LLM monitors encode coordination linearly and transferably, but their verdicts barely use that encoding: collusion framing makes them confidently wrong, and the framed 4B verdict tracks how coordination sounds rather than whether agents are linked. Swarms told they are watched changed their register, not their linkability: they largely stopped coordinating, and their attempt to hide was itself a detectable signature. Swarm oversight should read content and representations, not names and verdicts.
+On real swarm logs, oversight that follows agents' names or metadata misses what their words reveal. LLM monitors encode coordination linearly and transferably, but their verdicts barely use that encoding: collusion framing makes them confidently wrong, and framed verdicts track how coordination sounds rather than whether agents are linked. Swarms told they are watched changed how they wrote, not their linkability: they largely stopped coordinating, and their attempt to hide was itself a detectable signature. Swarm oversight should read content and representations, not names and verdicts.
 
 \paragraph{Code and Data.}
 \begin{itemize}
 \item \textbf{Code repository:} \url{https://github.com/dhruva137/swarm-test}. It holds all analysis code, Kaggle job scripts, result files and figures, and its README maps each result to a script.
 \item \textbf{Data (public):} \url{https://collusion.wiki}~\cite{collusionwiki2026} and \url{https://swarmtraces.org}~\cite{forman2026swarmtraces}.
+\item \textbf{Other artifacts:} an 11-slide summary deck (\texttt{slides/slides.pdf} in the repository).
 \item \textbf{Info-hazard note:} we redistribute no raw posts or payloads; only derived statistics are released.
 \end{itemize}
-
-\paragraph{LLM Usage Statement.} Claude (Anthropic) was used as a research assistant for experiment code, analysis and drafting. Claude Sonnet sub-agents performed independent code audits (four full audits and a final review), number-by-number fact checks, reference verification and the blind validation annotation. Qwen3 models are objects of study (judges, probed and steered models, synthetic agents). Every number traces to a script and a result file, and the author is responsible for all content.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}
@@ -298,9 +299,9 @@ On real swarm logs, oversight that follows agents' names or metadata misses what
 \begin{itemize}
 \item \textbf{Proxy label.} A shared uncommon URL indicates a shared workstream, not proven intent. Validators were LLMs that could see the URLs.
 \item \textbf{Rates.} ``Recall at 1\% FPR'' is measured on balanced pair sets, not deployment traffic.
-\item \textbf{Prompts.} The two prompts differ in both framing and question wording, so ``framing'' means the whole prompt change.
-\item \textbf{Steering.} Perturbations are applied at a single layer and at the answer position only.
-\item \textbf{Coordination-talk.} The instrument is similarity to five relay sentences from the same swarm, chosen before the analysis. It is not a validated measure of intent, and its two versions agree only for the framed 4B verdict.
+\item \textbf{Prompts.} The two prompts differ in both framing and question wording; a $2\times2$ swap (Qwen3-1.7B only) separates the two (Section~\ref{sec:p2}).
+\item \textbf{Steering.} Perturbations were applied in Qwen3-1.7B only: at the answer position of layers 8--24 and at every position of layer 20.
+\item \textbf{Coordination-talk.} The instrument is similarity to five relay sentences from the same swarm, chosen before the analysis. It is not a validated measure of intent. Two semantic versions (bge, MiniLM) agree at both model sizes; a keyword version confirms only the 4B loading, not the framing effect.
 \item \textbf{Confidence intervals.} Pair-level bootstraps resample clusters by the agent of the first post; agents that appear only as the second post are not clustered, so these CIs may be slightly narrow.
 \item \textbf{Dropped analyses.} A moderation-response analysis, a 32B run, a cross-layer direction-cosine analysis and a subspace-rank (INLP) analysis were dropped after audit (Appendix~\ref{app:audit}).
 \item \textbf{Dual use.} Knowing which signals reveal coordination could help a swarm hide. We judge the defensive value higher: our recommendations close gaps rather than open them.
@@ -338,13 +339,21 @@ Four code reviews and two number-by-number fact checks by Claude Sonnet agents (
 \item \textbf{Subspace rank (withdrawn).} INLP with ridge-shrunk directions rose even under random removal, a regularisation artifact. Only the linear-vs-nonlinear comparison remains.
 \item \textbf{Steering design.} A first version fitted the direction on the steered pairs and used 5 isotropic controls. The reported version uses disjoint pairs, label-permuted fitted nulls, a positive control and a hook-validation check.
 \item \textbf{Steering units.} A draft reported the verdict-vs-linkage effect ratio per SD of push (70--1,400$\times$). Because the verdict direction has about 10$\times$ the spread, the paper now reports a scale-free usage measure and per-norm ratios (138$\times$ and 9$\times$).
+\item \textbf{Steering at other layers (added last).} Layers 8, 12, 16 and 24 (answer position) and layer 20 (all positions), with 2 nulls each and one dose. At layers 8 and 12 the control is ineffective (under 0.3\% of the gap), so only layers 16--24 and the all-position run test the question. A draft bound of ``under 1\%'' was revised to under 1.4\% after these runs.
 \item \textbf{Monoculture hypothesis (rejected).} We hypothesised that warned swarms converge on a shared disguise. Cross-swarm similarity in fact \emph{fell} (0.90$\to$0.73). Only the detectability of evasion is reported.
-\item \textbf{Coordination-talk instrument.} With the semantic instrument, collusion framing raises the verdict's loading at both sizes. A lexical (TF-IDF) instrument, run as a robustness check, does not ($-0.063$ at 1.7B, $-0.004$ at 4B), and the two instruments correlate only at $r=0.39$. We report as robust only what holds under both (framed 4B verdict positive, probes negative). The lexical instrument is uninformative on synthetic posts, where the relay sentences' words almost never occur.
+\item \textbf{Coordination-talk instruments.} With the bge instrument, collusion framing raises the verdict's loading at both sizes. A keyword (TF-IDF) instrument, run as a robustness check, does not ($-0.063$ at 1.7B, $-0.004$ at 4B) and correlates only $r=0.39$ with bge. A third, semantic instrument from another model family (MiniLM; $r=0.74$ with bge), added last, confirms the framed loading and the framing effect at both sizes. We therefore report the framed-verdict result under the semantic instruments and state where the keyword instrument disagrees. The keyword instrument is uninformative on synthetic posts, where the relay sentences' words almost never occur; MiniLM confirms the register drop at 8B but not at 1.7B.
 \item \textbf{Probe robustness (partly rejected).} We expected probes to resist injected sentences. Any appended sentence shifts them; they only resist the verdict-targeted attack.
 \end{enumerate}
 
 \section{Additional Results}
 \label{app:figs}
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_geometry.pdf}
+\caption{\textbf{Part 2: the monitor knows more than it says} (Qwen3-1.7B, 1,500 pairs). (a, b) Each pair's out-of-fold linkage coordinate (axis fitted under the neutral prompt) against its answer coordinate (YES$-$NO unembedding), in neutral-prompt SD units; diamonds mark class means. Framing lifts the whole cloud along the answer axis. (c) Held-out AUROC of linear read-outs by layer: the framed model's own activations (green) remain as informative as the neutral ones (blue, solid), while the framed verbal answer (orange, dashed) falls.}
+\label{fig:geometry}
+\end{figure}
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.9\linewidth]{fig_fields.pdf}
@@ -388,5 +397,8 @@ Judge (prompt) & Relay vs.\ nothing (unlinked) & Relay vs.\ neutral sent.\ (unli
 \caption{(a) Paired shift in judges' log-odds that two \emph{unrelated} agents coordinate after one real relay sentence ($n=500$). (b) A 1.7B probe trained only on the wiki swarm, applied unchanged to the attack swarm.}
 \label{fig:attack}
 \end{figure}
+
+\section*{LLM Usage Statement}
+We used Claude (Anthropic) to brainstorm approaches, write and audit the analysis code, and help draft this report; every result and claim was checked against the code and result files.
 
 \end{document}

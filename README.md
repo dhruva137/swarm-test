@@ -1,12 +1,12 @@
 # Agents Change Names, Not Words
 
-Code, results and paper for *Agents Change Names, Not Words: Where a Swarm's Coordination Becomes Visible, and Where Oversight Loses It* (Apart Research Swarm Alignment Hackathon, November 2026).
+Code, results and paper for *Agents Change Names, Not Words: What Oversight Can See in a Real AI Swarm* (Apart Research Swarm Alignment Hackathon, November 2026).
 
 Overseeing an AI agent swarm rests on one operation: linking actions taken under different identities to a shared effort. This project asks where that coordination signal lives and where oversight loses it. It follows the signal through three places:
 
 1. **The logs of a real swarm** (collusion.wiki, replicated on the SwarmTraces reconstruction of the Hugging Face attack swarm). The signal is in what agents write, not in their self-chosen names or metadata.
-2. **The internals of LLM monitors** (Qwen3 1.7B/4B/8B). The signal is linearly encoded in the monitor's activations, but its verdict barely uses it. Collusion framing makes the verdict confidently wrong, and the framed Qwen3-4B verdict tracks how coordination *sounds* (coordination-like language that does not indicate linkage) rather than whether agents are linked.
-3. **Controlled synthetic swarms** that are told a content monitor is watching. They drop coordination-sounding language but do not become measurably harder to link; they lose their ability to coordinate, and their evasion is itself detectable.
+2. **The internals of LLM monitors** (Qwen3 1.7B/4B/8B). The signal is linearly encoded in the monitor's activations, but its verdict barely uses it. Collusion framing makes the verdict confidently wrong, and framed verdicts track how coordination *sounds* (coordination-like language that does not indicate linkage) rather than whether agents are linked.
+3. **Controlled synthetic swarms** that are told a content monitor is watching. They change how they write but do not become measurably harder to link; they lose their ability to coordinate, and their evasion is itself detectable.
 
 The paper is `paper/main.pdf` (LaTeX source `paper/main.tex`, references `paper/refs.bib`).
 
@@ -16,6 +16,7 @@ All code in this repository was written during the hackathon (8 to 9 November 20
 
 ```
 paper/        main.tex, refs.bib, main.pdf
+slides/       slides.tex, slides.pdf, slides.pptx (11-slide summary deck)
 src/          analysis scripts (Python); see the reproduction table below
 kaggle/       headless Kaggle GPU jobs (each folder: script + kernel-metadata.json)
 results/      every result file behind every number in the paper (JSON, CSV, JSONL, Parquet)
@@ -56,21 +57,24 @@ The final results come from the audit-corrected pipeline below. Run the steps in
 | Part 2: evaluation sample | `src/export_v2.py` | `v2_sample.parquet` (and the Kaggle input) |
 | Part 2: verbal scores and activations (1.7B, 4B) | `kaggle/probe_acts/acts.py` (Kaggle) | `k_swarm-probe-acts/*.npz` (see LARGE_FILES.md) |
 | Part 2: verbal vs probe, framing, paired tests | `src/llm_v2_eval.py`, `src/paired_extra.py`, `src/gapchange_baserate.py` | `llm_v2.json`, `paired_extra.json`, `gapchange_baserate.json` |
+| Part 2: framing vs wording (2x2 swap of system message and question, Qwen3-1.7B) | `src/prompt_swap.py` (local GPU) | `prompt_swap.json`, `prompt_swap.log` |
 | Part 2: read-out by layer, framing shift | `src/geometry2.py` | `geometry2.json` |
 | Part 2: linear vs MLP vs quadratic probes, decision entropy | `src/mech.py` | `mech.json` |
 | Part 2: causal steering (corrected) and positive control | `src/steer2.py`, `src/steer3.py` | `steer2.json`, `steer3.json`, `steer*_rows.csv` |
 | Part 2: scale-free steering usage and per-norm ratios | `src/usage.py` (re-fits the `steer3` directions and checks them against `steer3.json`) | `usage.json` |
-| Part 2: Qwen3-4B steering replication (pushed to Kaggle but still queued at submission time; not in the paper) | `src/export_acts4b_l24.py` → `kaggle/steer4b/steer4b.py`; then `src/usage.py` picks it up | `k_swarm-steer4b/` |
+| Part 2: steering at layers 8, 12, 16, 24 (answer position) and at layer 20 (all token positions) | `src/steer_layers.py` (local GPU) | `steer_layers.json`, `steer_layers_rows.csv`, `steer_layers.log` |
+| Part 2: Qwen3-4B steering replication (never left the Kaggle queue and was cancelled; not in the paper) | `src/export_acts4b_l24.py` → `kaggle/steer4b/steer4b.py`; then `src/usage.py` picks it up | `k_swarm-steer4b/` |
 | Part 2: 8B framed judge | `kaggle/recruit/recruit.py` | `k_swarm-recruit/`, `recruit.json` |
 | Part 2: swarm-sentence injection, null-controlled | `kaggle/recruit/`, `kaggle/recruit8n/`, `kaggle/inject/inject.py` → `src/recruit_null.py` | `recruit_null.json` |
 | Part 2: relay-sentence effect as a share of each judge's own class gap | `src/relay_sd.py` | `relay_sd.json` |
 | Part 2: does injected text move the probe as well as the verdict? | `src/robust_repr.py` (needs the `local_inject/` and `k_swarm-inject/` activations) | `robust_repr.json`, `robust_repr.log` |
-| Part 2: verdict vs probe loading on coordination-talk, and its stress tests (framing difference, hard pairs only, lexical instrument, unrelated pairs only) | `src/topic_vs_relation.py`, `src/coordtalk_checks.py` | `topic_vs_relation.json`, `coordtalk_checks.json` |
+| Part 2: verdict vs probe loading on coordination-talk, and its stress tests (framing difference, hard pairs only, lexical instrument, unrelated pairs only) | `src/topic_vs_relation.py`, `src/coordtalk_checks.py`, `src/coordtalk_minilm.py` (third instrument) | `topic_vs_relation.json`, `coordtalk_checks.json`, `coordtalk_minilm.json` |
 | Part 2: cross-swarm probe transfer | `kaggle/st_acts/st_acts.py` (local GPU) → `src/transfer_eval.py` | `transfer_Qwen3-1.7B.json` |
 | Part 3: controlled swarms | `kaggle/sim/sim.py` (vLLM on Kaggle; `BACKEND=hf` runs locally) → `src/sim_eval.py` | `k_swarm-sim/`, `sim_1p7b/`, `sim_eval_*.json` |
 | Part 3: evasion detectability, cross-swarm similarity (monoculture hypothesis, rejected), model fingerprint | `src/monoculture.py` | `monoculture.json` |
 | Part 3: coordination-talk of synthetic posts, open vs warned | `src/coordtalk_checks.py` (check C5) | `coordtalk_checks.json` |
-| Figures | `src/figures_v2.py`, `src/fig_coordtalk.py` | `figs/` |
+| Figures | `src/figures_v2.py`, `src/fig_overview.py`, `src/fig_coordtalk.py`, `src/fig_steer_layers.py` | `figs/` |
+| Slides and project image | `tectonic slides/slides.tex` (expects figures in `../figs/`), then `src/make_extras.py` | `slides/slides.pdf`, `slides/slides.pptx`, `figs/project_image.png` |
 | Paper | `tectonic paper/main.tex` (expects figures in `../figs/`) | `paper/main.pdf` |
 
 ### Superseded scripts (kept for the audit trail)
@@ -83,7 +87,7 @@ The subspace-rank (INLP) part of `src/mech.py` is reported in `mech.json`, but i
 
 ## Audit trail
 
-Four independent code reviews and two number-by-number fact checks were run on every script before submission. They found a label shortcut, fold leakage, an unfair LLM comparison, a tie bug in recall-at-FPR, a regression-to-the-mean injection effect, and three geometry claims with invalid nulls. A final review covered the analyses added last (steering usage, injection robustness, coordination-talk); it found no code bug, and its wording corrections are in the paper. A lexical robustness check, run by us, narrowed the coordination-talk claim to the framed Qwen3-4B verdict. Every correction and every withdrawn claim is listed in the paper's Appendix C (Audit Log). Every number in the paper traces to a file in `results/`.
+Four independent code reviews and two number-by-number fact checks were run on every script before submission. They found a label shortcut, fold leakage, an unfair LLM comparison, a tie bug in recall-at-FPR, a regression-to-the-mean injection effect, and three geometry claims with invalid nulls. A final review covered the analyses added last (steering usage, injection robustness, coordination-talk); it found no code bug, and its wording corrections are in the paper. For coordination-talk, a keyword measure disagreed with the semantic measure at Qwen3-1.7B; a second semantic measure from another model family (MiniLM) confirmed the semantic result at both sizes, and the paper states where the keyword measure disagrees. Every correction and every withdrawn claim is listed in the paper's Appendix C (Audit Log). Every number in the paper traces to a file in `results/`.
 
 ## Ethics and dual use
 
@@ -100,7 +104,7 @@ Code: MIT. The datasets remain under their original terms.
 ```bibtex
 @misc{gowda2026agentschangenames,
   author = {Dhruva P Gowda},
-  title  = {Agents Change Names, Not Words: Where a Swarm's Coordination Becomes Visible, and Where Oversight Loses It},
+  title  = {Agents Change Names, Not Words: What Oversight Can See in a Real AI Swarm},
   year   = {2026},
   note   = {Apart Research Swarm Alignment Hackathon},
   url    = {https://github.com/dhruva137/swarm-test}

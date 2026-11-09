@@ -1,0 +1,19 @@
+{
+ "check_rescored_framed_vs_recorded_r": 0.9998960740814731,
+ "neutral system + neutral question (original neutral prompt)": {
+  "yes_rate_unrelated": 0.0013333333333333333,
+  "auroc_hard_macro": 0.7825666666666666
+ },
+ "framed system + framed question (original framed prompt)": {
+  "yes_rate_unrelated": 0.8733333333333333,
+  "auroc_hard_macro": 0.7187533333333335
+ },
+ "framed system + neutral question": {
+  "yes_rate_unrelated": 0.028,
+  "auroc_hard_macro": 0.68394
+ },
+ "neutral system + framed question": {
+  "yes_rate_unrelated": 0.1,
+  "auroc_hard_macro": 0.7566266666666668
+ }
+}

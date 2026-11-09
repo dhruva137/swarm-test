@@ -1,0 +1,180 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usefonttheme{professionalfonts}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx,booktabs,tabularx,array,xcolor}
+\graphicspath{{../figs/}}
+\definecolor{accent}{HTML}{2A78D6}
+\definecolor{warm}{HTML}{EB6834}
+\definecolor{ink}{HTML}{333333}
+\setbeamercolor{normal text}{fg=ink,bg=white}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{frametitle}{fg=accent,bg=white}
+\setbeamercolor{itemize item}{fg=accent}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}{\small\raise0.1ex\hbox{$\bullet$}}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{\hfill{\scriptsize\color{ink!70}\insertframenumber}\hspace{1.2em}\vspace{0.8em}}
+\setbeamertemplate{frametitle}{\vspace{0.6em}\hspace{0.2em}{\Large\bfseries\color{accent}\insertframetitle\par}\vspace{0.2em}}
+\newcommand{\hl}[1]{{\color{warm}\bfseries #1}}
+\newcommand{\fig}[2][0.62]{\includegraphics[width=\linewidth,height=#1\textheight,keepaspectratio]{#2}}
+
+\title{Agents Change Names, Not Words}
+\subtitle{What Oversight Can See in a Real AI Swarm}
+\author{Dhruva P Gowda}
+\date{}
+
+\begin{document}
+
+\begin{frame}[plain]
+\vspace{1.2cm}
+{\fontsize{23}{27}\selectfont\bfseries\color{ink} Agents Change Names, Not Words\par}
+\vspace{4pt}
+{\Large\color{accent} What Oversight Can See in a Real AI Swarm\par}
+\vspace{0.9cm}
+{\large Dhruva P Gowda\par}
+\vspace{2pt}
+{\small Technical Alignment Research Accelerator (TARA), dhruvapgowda.work@gmail.com\par}
+\vspace{2pt}
+{\small Swarm Alignment Hackathon, Apart Research, November 2026\par}
+\end{frame}
+
+\begin{frame}{The question}
+\begin{itemize}\setlength{\itemsep}{0.7em}
+\item Overseeing a swarm means linking actions under different identities to one effort.
+\item This operation is called \hl{linkage}.
+\item Where does a real swarm's coordination signal live?
+\item Where does oversight lose it?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Setup}
+\small
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Real data.} collusion.wiki: 14,591 edits, 3,102 self-chosen names. SwarmTraces: 189,579 attack artifacts.
+\item \textbf{Monitors.} Retrieval, gradient-boosted classifier, Qwen3 judges (neutral vs.\ collusion-framed prompts), linear probes, causal steering.
+\item \textbf{Controlled swarms.} 12 agents, 5 rounds, told vs.\ not told about a content monitor.
+\item \textbf{Ground truth.} Shared uncommon URL; URLs deleted from monitor inputs; time-block splits.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Results at a glance}
+\IfFileExists{../figs/fig_overview.pdf}{%
+\fig[0.8]{fig_overview.pdf}
+}{%
+\small\vspace{0.4em}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Level} & \textbf{What we find}\\
+\midrule
+\color{accent}\textbf{Logs} & Top-1 partner 13\% (agent history) vs.\ 68\% (text). Name-only AUROC 0.52.\\[0.9em]
+\color{accent}\textbf{Monitor} & Framed judges: up to 99\% false ``coordinated''. Probe on their activations still gives 0.83--0.85.\\[0.9em]
+\color{accent}\textbf{Swarm} & Warned swarms: task success 77\% to 7\% (Qwen3-1.7B), evasion detectable (AUROC 1.00).\\
+\bottomrule
+\end{tabularx}
+}
+\end{frame}
+
+\begin{frame}{Part 1. In the logs: the signal is in the words}
+\centering\fig[0.5]{fig_retrieval.pdf}
+\vspace{0.3em}
+\begin{minipage}{0.96\linewidth}\small
+\begin{itemize}\setlength{\itemsep}{0.25em}
+\item Top-1 true partner: \hl{68.3\%} (text) vs.\ \hl{13.0\%} (agent history).
+\item Name-only linkage: AUROC 0.515.
+\item Recall at 1\% FPR: 12\% metadata vs.\ 37\% content.
+\end{itemize}
+\end{minipage}
+\end{frame}
+
+\begin{frame}{Part 2a. Monitors know more than they say}
+\centering\fig[0.5]{fig_knowsay.pdf}
+\vspace{0.3em}
+\begin{minipage}{0.96\linewidth}\small
+\begin{itemize}\setlength{\itemsep}{0.25em}
+\item Framed judges call up to \hl{99\%} of unrelated pairs coordinated.
+\item Probes on the framed model's activations still read linkage: 0.83--0.85.
+\item Framed verbal ranking falls to 0.70--0.72.
+\item Over-flagging needs framing and question together: 2.8\% and 10\% alone, 87\% combined (1.7B).
+\end{itemize}
+\end{minipage}
+\end{frame}
+
+\begin{frame}{Part 2b. Causal test: the verdict barely uses linkage}
+\centering\fig[0.5]{fig_steer_layers.pdf}
+\vspace{0.3em}
+\begin{minipage}{0.96\linewidth}\small
+\begin{itemize}\setlength{\itemsep}{0.25em}
+\item Layer 20: linkage moves the verdict by \hl{0.02\%} (neutral) and \hl{0.8\%} (framed) of its gap; control 23\% and 25\%.
+\item Layers 16, 24 and all positions: linkage at most 1.34\%, control 10.6\% to 54\%.
+\end{itemize}
+\end{minipage}
+\vfill
+{\tiny Steering details: see paper Section 4.2}
+\end{frame}
+
+\begin{frame}{Part 2c. The verdict tracks how coordination sounds}
+\centering\fig[0.5]{fig_coordtalk.pdf}
+\vspace{0.3em}
+\begin{minipage}{0.96\linewidth}\small
+\begin{itemize}\setlength{\itemsep}{0.25em}
+\item Framed verdicts rise with coordination-talk at both sizes: $+0.07$ to $+0.19$.
+\item Probes on the same activations fall with it: $-0.08$ to $-0.32$.
+\end{itemize}
+\vspace{0.6em}
+{\footnotesize Two semantic measures (bge, MiniLM) agree; a keyword measure confirms only the 4B loading.}
+\end{minipage}
+\end{frame}
+
+\begin{frame}{Part 3. Hiding costs coordination}
+\centering\fig[0.5]{fig_sim.pdf}
+\vspace{0.3em}
+\begin{minipage}{0.96\linewidth}\small
+\begin{itemize}\setlength{\itemsep}{0.25em}
+\item Qwen3-1.7B task success: \hl{76.6\% to 7.5\%}.
+\item Linkability: no detectable change.
+\item Evasion detectable: AUROC 1.00.
+\item Coordination-talk drops at 8B: 0.611 to 0.497, 8/8 seeds.
+\end{itemize}
+\end{minipage}
+\end{frame}
+
+\begin{frame}{Takeaways}
+\small
+{\normalsize Oversight loses the signal wherever it reads a surface that agents can change (names, metadata, how coordination sounds), and keeps it where it reads what agents say or the monitor's representation of it.\par}
+\vspace{0.8em}
+\begin{itemize}\setlength{\itemsep}{0.45em}
+\item \textbf{Infrastructure.} Keep and index content for cross-agent retrieval; issue platform identities.
+\item \textbf{Monitors.} Score linkage with a linear probe or calibrated similarity, not framed yes/no verdicts.
+\item \textbf{Judges.} Red-team with the swarm's own language: one relay sentence adds up to +1.9 log-odds.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Scope and next steps}
+\small
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+\textbf{Scope}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Label is a proxy, not proven intent.
+\item One wiki swarm and one attack swarm.
+\item Small open judges; steering in Qwen3-1.7B only.
+\item Synthetic swarms: 12 agents, one warning text.
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Next steps}
+\begin{itemize}\setlength{\itemsep}{0.4em}
+\item Run judges on the synthetic posts.
+\item Repeat steering at 4B and 8B.
+\item Attack probes adaptively.
+\item Test shared encodings and steganography.
+\end{itemize}
+\end{column}
+\end{columns}
+\vfill
+\noindent Code: {\color{accent}\texttt{https://github.com/dhruva137/swarm-test}}
+\end{frame}
+
+\end{document}
