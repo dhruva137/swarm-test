@@ -1,0 +1,18 @@
+{
+ "id": "dhruvapgowda/swarm-steer4b",
+ "title": "swarm-steer4b",
+ "code_file": "steer4b.py",
+ "language": "python",
+ "kernel_type": "script",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_internet": true,
+ "machine_shape": "NvidiaTeslaT4",
+ "dataset_sources": [
+  "dhruvapgowda/swarm-v2-pairs",
+  "dhruvapgowda/swarm-4b-l24"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

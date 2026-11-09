@@ -1,0 +1,15 @@
+# Versions as installed in the environment that produced the results (Python 3.13.11, Windows 11).
+numpy==2.4.4
+pandas==2.2.3
+scikit-learn==1.6.1
+scipy==1.15.2
+matplotlib==3.10.1
+torch==2.10.0
+transformers==5.22.1
+sentence-transformers==6.2.0
+safetensors==0.8.0
+huggingface_hub==2.4.0
+pyarrow==26.0.0
+markdown==3.10.2
+# vllm is used only inside the Kaggle jobs in kaggle/ (installed there; not needed locally):
+# vllm

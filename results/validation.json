@@ -1,0 +1,31 @@
+{
+ "claude_sonnet_blind": {
+  "n": 200,
+  "table": {
+   "no": {
+    "easy": 26,
+    "hard": 8,
+    "pos": 3
+   },
+   "unclear": {
+    "easy": 7,
+    "hard": 16,
+    "pos": 7
+   },
+   "yes": {
+    "easy": 7,
+    "hard": 16,
+    "pos": 110
+   }
+  },
+  "pos_yes_rate_decided": 0.9734513274336283,
+  "pos_unclear_rate": 0.058333333333333334,
+  "hard_yes_rate_decided": 0.6666666666666666,
+  "hard_unclear_rate": 0.4,
+  "easy_yes_rate_decided": 0.21212121212121213,
+  "easy_unclear_rate": 0.175,
+  "gt_pos_precision": 0.9734513274336283,
+  "gt_neg_precision": 0.5964912280701754,
+  "agreement_decided": 0.8470588235294118
+ }
+}

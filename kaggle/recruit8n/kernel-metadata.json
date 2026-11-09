@@ -1,0 +1,15 @@
+{
+  "id": "dhruvapgowda/swarm-recruit8n",
+  "title": "swarm-recruit8n",
+  "code_file": "recruit.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": ["dhruvapgowda/swarm-v2-pairs"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

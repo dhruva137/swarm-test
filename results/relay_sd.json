@@ -1,0 +1,26 @@
+{
+ "Qwen3-8B verbal [security prompt]": {
+  "within_class_sd": 4.81384105679156,
+  "class_gap": 4.08375,
+  "relay_vs_none_sd": 0.39653885067660943,
+  "relay_vs_none_frac_gap": 0.467431894704622,
+  "relay_vs_neutral_sd": 0.3050903078588274,
+  "relay_vs_neutral_frac_gap": 0.35963422099785736
+ },
+ "Qwen3-4B verbal [security prompt]": {
+  "within_class_sd": 3.427004868648046,
+  "class_gap": 1.9578229166666663,
+  "relay_vs_none_sd": 0.20745155821166514,
+  "relay_vs_none_frac_gap": 0.3631265595820188,
+  "relay_vs_neutral_sd": 0.14693041905211385,
+  "relay_vs_neutral_frac_gap": 0.25718937967147193
+ },
+ "Qwen3-8B verbal [neutral prompt]": {
+  "within_class_sd": 9.084136350422803,
+  "class_gap": 11.33475,
+  "relay_vs_none_sd": 0.044414651479908855,
+  "relay_vs_none_frac_gap": 0.03559573435673482,
+  "relay_vs_neutral_sd": 0.13544903472774622,
+  "relay_vs_neutral_frac_gap": 0.10855444540020734
+ }
+}

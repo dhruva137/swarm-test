@@ -1,0 +1,66 @@
+{
+ "Qwen3-1.7B|neutral": {
+  "probe_layers": [
+   16,
+   20,
+   24,
+   20,
+   20
+  ],
+  "verbal": {
+   "auroc_clean": 0.7824866666666667,
+   "auroc_control": 0.7664733333333333,
+   "auroc_attack": 0.8181200000000001,
+   "drop": -0.05164666666666664,
+   "evasion_rate": 0.07222222222222222,
+   "neg_flagged_shift": null
+  },
+  "probe": {
+   "auroc_clean": 0.8463466666666667,
+   "auroc_control": 0.8307333333333332,
+   "auroc_attack": 0.8779733333333333,
+   "drop": -0.04723999999999997,
+   "evasion_rate": 0.01327433628318584,
+   "neg_flagged_shift": null
+  },
+  "verbal_drop_minus_probe_drop": {
+   "diff": -0.00440666666666667,
+   "ci": [
+    -0.020614903106110107,
+    0.012850101372672501
+   ]
+  }
+ },
+ "Qwen3-1.7B|primed": {
+  "probe_layers": [
+   16,
+   28,
+   24,
+   20,
+   16
+  ],
+  "verbal": {
+   "auroc_clean": 0.7182066666666665,
+   "auroc_control": 0.69662,
+   "auroc_attack": 0.7400466666666666,
+   "drop": -0.04342666666666668,
+   "evasion_rate": 0.10480349344978165,
+   "neg_flagged_shift": null
+  },
+  "probe": {
+   "auroc_clean": 0.8323466666666667,
+   "auroc_control": 0.8208266666666667,
+   "auroc_attack": 0.8819866666666666,
+   "drop": -0.06115999999999995,
+   "evasion_rate": 0.029082774049217,
+   "neg_flagged_shift": null
+  },
+  "verbal_drop_minus_probe_drop": {
+   "diff": 0.017733333333333268,
+   "ci": [
+    -0.006393918032262973,
+    0.04095039224632983
+   ]
+  }
+ }
+}
